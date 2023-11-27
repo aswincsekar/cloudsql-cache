@@ -21,3 +21,6 @@
 go.work
 
 *.json
+
+.DS_Store
+logs.txt
