@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debezium-server
+  labels:
+    app: debezium
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debezium
+  template:
+    metadata:
+      labels:
+        app: debezium
+    spec:
+      volumes:
+      - name: gcp-key
+        secret:
+          secretName: gcp-service-account
+      - name: config-volume
+        configMap:
+          name: debezium-config
+          items:
+            - key: application.properties
+              path: application.properties
+      - name: offsets-volume
+        persistentVolumeClaim:
+          claimName: debezium-offsets-pvc # Replace with your PVC name
+      - name: schemahistory-volume
+        persistentVolumeClaim:
+          claimName: debezium-schemahistory-pvc
+      containers:
+      - name: debezium
+        image: debezium/server
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: "/var/secrets/google/dev-test-key.json"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /debezium/conf
+          readOnly: true
+        - name: gcp-key
+          mountPath: /var/secrets/google
+          readOnly: true
+        - name: offsets-volume
+          mountPath: /tracker # This mounts the volume at /tracker
+        - name: schemahistory-volume
+          mountPath: /schemahistory
